@@ -1,5 +1,7 @@
 # 2035年
 
+[![Validate manuscript](https://github.com/KAFKA2306/Year2035/actions/workflows/validate-manuscript.yml/badge.svg)](https://github.com/KAFKA2306/Year2035/actions/workflows/validate-manuscript.yml)
+
 ## 監視社会に抗う者たちの、自由を求めた革命の物語。
 
 ## 概要
