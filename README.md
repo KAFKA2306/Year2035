@@ -29,12 +29,10 @@
 
 ## 編集・監査
 
-単一の検証コマンドで、章番号、READMEの読書順、用語集の初出、旧READMEからの本文欠落を検査できます。
+単一の検証コマンドで、章番号、READMEの読書順、用語集の初出を検査できます。
 
 ```bash
 python scripts/validate_manuscript.py
 ```
 
-移行時の正本は旧READMEのGit blob `33a08dd200bf79bf2db36e81c0236ee2ed08ef95` です。validatorはこのblobをGit履歴から直接読み出し、旧 `まえがき / 第0章 / 第一部 / 第二部 / 第三部 / あとがき` と分割後ファイルの本文を、見出し・区切り線・空白を除いて比較します。
-
-GitHub Actionsでも同じvalidatorを実行し、章欠番、リンク切れ、用語初出の不整合、移行本文のドリフトを拒否します。
+GitHub Actionsでも同じvalidatorを実行し、章欠番、リンク切れ、用語初出の不整合を拒否します。
