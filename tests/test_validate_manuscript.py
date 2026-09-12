@@ -12,7 +12,7 @@ SPEC.loader.exec_module(validator)
 
 
 class GlossaryRowProvenanceTest(unittest.TestCase):
-    def test_wrong_link_on_term_row_is_not_masked_by_another_row(self) -> None:
+    def test_wrong_link_on_term_row_fails_even_when_expected_path_exists_elsewhere(self) -> None:
         glossary = """\
 | 名称 | 種別 | 定義 | 初出 |
 | --- | --- | --- | --- |
@@ -20,10 +20,8 @@ class GlossaryRowProvenanceTest(unittest.TestCase):
 | 時間割税 | 制度 | definition | [第0章](manuscript/01-chapter-0.md) |
 """
         rows = validator.parse_glossary_rows(glossary)
-        self.assertEqual(rows["ハルコ"], "manuscript/02-chapter-1.md")
-        self.assertNotEqual(
-            rows["ハルコ"], validator.GLOSSARY_FIRST_APPEARANCE["ハルコ"]
-        )
+        with self.assertRaisesRegex(SystemExit, "row for ハルコ declares"):
+            validator.validate_glossary_row_contract(rows)
 
     def test_missing_first_appearance_link_fails_explicitly(self) -> None:
         glossary = """\
@@ -48,10 +46,9 @@ class GlossaryRowProvenanceTest(unittest.TestCase):
         glossary = (Path(__file__).resolve().parents[1] / "glossary.md").read_text(
             encoding="utf-8"
         )
-        self.assertEqual(
-            validator.parse_glossary_rows(glossary),
-            validator.GLOSSARY_FIRST_APPEARANCE,
-        )
+        rows = validator.parse_glossary_rows(glossary)
+        validator.validate_glossary_row_contract(rows)
+        self.assertEqual(rows, validator.GLOSSARY_FIRST_APPEARANCE)
 
 
 if __name__ == "__main__":
