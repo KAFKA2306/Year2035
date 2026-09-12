@@ -68,6 +68,17 @@ def parse_glossary_rows(glossary: str) -> dict[str, str]:
     return rows
 
 
+def validate_glossary_row_contract(glossary_rows: dict[str, str]) -> None:
+    for term, expected_path in GLOSSARY_FIRST_APPEARANCE.items():
+        if term not in glossary_rows:
+            fail(f"glossary missing structured row for term: {term}")
+        actual_path = glossary_rows[term]
+        if actual_path != expected_path:
+            fail(
+                f"glossary row for {term} declares {actual_path}, expected {expected_path}"
+            )
+
+
 def validate_headings() -> None:
     for path, expected_heading in ORDERED_FILES:
         first_line = read(path).splitlines()[0]
@@ -101,17 +112,11 @@ def validate_readme_links() -> None:
 
 def validate_glossary() -> None:
     glossary_rows = parse_glossary_rows(read("glossary.md"))
+    validate_glossary_row_contract(glossary_rows)
     ordered_paths = [path for path, _ in ORDERED_FILES]
     bodies = {path: read(path) for path in ordered_paths}
 
     for term, expected_path in GLOSSARY_FIRST_APPEARANCE.items():
-        if term not in glossary_rows:
-            fail(f"glossary missing structured row for term: {term}")
-        actual_path = glossary_rows[term]
-        if actual_path != expected_path:
-            fail(
-                f"glossary row for {term} declares {actual_path}, expected {expected_path}"
-            )
         expected_index = ordered_paths.index(expected_path)
         if term not in bodies[expected_path]:
             fail(f"term {term} is absent from declared first appearance {expected_path}")
