@@ -30,6 +30,8 @@ GLOSSARY_FIRST_APPEARANCE = {
     "レジスタンス": "manuscript/02-chapter-1.md",
 }
 
+GLOSSARY_LINK_RE = re.compile(r"^\[[^\]]+\]\(([^)]+)\)$")
+
 
 def fail(message: str) -> None:
     raise SystemExit(f"manuscript validation failed: {message}")
@@ -40,6 +42,41 @@ def read(path: str) -> str:
     if not target.is_file():
         fail(f"missing file: {path}")
     return target.read_text(encoding="utf-8")
+
+
+def parse_glossary_rows(glossary: str) -> dict[str, str]:
+    """Return term -> first-appearance path from glossary data rows."""
+    rows: dict[str, str] = {}
+    for raw_line in glossary.splitlines():
+        line = raw_line.strip()
+        if not line.startswith("|") or not line.endswith("|"):
+            continue
+        cells = [cell.strip() for cell in line[1:-1].split("|")]
+        if len(cells) != 4:
+            continue
+        term, _, _, first_appearance = cells
+        if term in {"名称", "---"} or not term:
+            continue
+        if term not in GLOSSARY_FIRST_APPEARANCE:
+            continue
+        if term in rows:
+            fail(f"glossary has duplicate row for tracked term: {term}")
+        match = GLOSSARY_LINK_RE.fullmatch(first_appearance)
+        if not match:
+            fail(f"glossary row for {term} must contain exactly one first-appearance link")
+        rows[term] = match.group(1)
+    return rows
+
+
+def validate_glossary_row_contract(glossary_rows: dict[str, str]) -> None:
+    for term, expected_path in GLOSSARY_FIRST_APPEARANCE.items():
+        if term not in glossary_rows:
+            fail(f"glossary missing structured row for term: {term}")
+        actual_path = glossary_rows[term]
+        if actual_path != expected_path:
+            fail(
+                f"glossary row for {term} declares {actual_path}, expected {expected_path}"
+            )
 
 
 def validate_headings() -> None:
@@ -74,15 +111,12 @@ def validate_readme_links() -> None:
 
 
 def validate_glossary() -> None:
-    glossary = read("glossary.md")
+    glossary_rows = parse_glossary_rows(read("glossary.md"))
+    validate_glossary_row_contract(glossary_rows)
     ordered_paths = [path for path, _ in ORDERED_FILES]
     bodies = {path: read(path) for path in ordered_paths}
 
     for term, expected_path in GLOSSARY_FIRST_APPEARANCE.items():
-        if term not in glossary:
-            fail(f"glossary missing term: {term}")
-        if f"]({expected_path})" not in glossary:
-            fail(f"glossary has no expected first-appearance link for {term}")
         expected_index = ordered_paths.index(expected_path)
         if term not in bodies[expected_path]:
             fail(f"term {term} is absent from declared first appearance {expected_path}")
